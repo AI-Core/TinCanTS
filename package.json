@@ -1,0 +1,15 @@
+{
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "typescript": "^5.3.3"
+  },
+  "name": "TinCanTs",
+  "version": "1.0.0",
+  "description": "A typed version of TinCanJs",
+  "main": "index.js",
+  "author": "IvanYingX",
+  "license": "MIT",
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  }
+}
