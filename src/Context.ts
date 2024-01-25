@@ -1,15 +1,16 @@
 import { Logger } from "./Logger";
-import { Agent, AgentCfg } from "./Agent";
+import { Agent } from "./Agent";
 import { Group, GroupCfg } from "./Group";
 import { ContextActivities, ContextActivitiesCfg } from "./ContextActivities";
 import { StatementRef } from "./StatementRef";
 import { SubStatement, SubStatementCfg } from "./SubStatement";
 import { StatementCfg } from "./Statement";
+import { IAgentCfg } from "./interfaces/Agent";
 
 export interface ContextCfg {
   registration?: string | null;
-  instructor?: Agent | Group | AgentCfg | GroupCfg | null;
-  team?: Agent | Group | AgentCfg | GroupCfg | null;
+  instructor?: Agent | Group | IAgentCfg | GroupCfg | null;
+  team?: Agent | Group | IAgentCfg | GroupCfg | null;
   contextActivities?: ContextActivitiesCfg | null;
   revision?: string | null;
   platform?: string | null;
@@ -63,7 +64,6 @@ export class Context {
       this.extensions = cfg.extensions;
     }
 
-    const agentGroupProps = ["instructor", "team"];
     if (cfg?.instructor) {
       const val = cfg.instructor;
       if (typeof val.objectType === "undefined" || val.objectType === "Person") {

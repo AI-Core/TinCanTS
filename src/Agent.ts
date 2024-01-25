@@ -1,22 +1,7 @@
 import { Logger } from "./Logger";
 import { AgentAccount } from "./AgentAccount";
 import { Versions } from "./Versions";
-import { AgentAccountCfg } from "./interfaces";
-
-
-export interface AgentCfg {
-  name?: string;
-  mbox?: string;
-  mbox_sha1sum?: string;
-  openid?: string;
-  account?: AgentAccount | AgentAccountCfg;
-  firstName?: string;
-  lastName?: string;
-  familyName?: string;
-  givenName?: string;
-  objectType?: string;
-//   [key: string]: string | AgentAccount | AgentAccountCfg | undefined;
-}
+import { IAgentAccountCfg, IAgentCfg } from "./interfaces/Agent";
 
 export class Agent {
   objectType: string = "Agent";
@@ -24,12 +9,12 @@ export class Agent {
   mbox: string | null = null;
   mbox_sha1sum: string | null = null;
   openid: string | null = null;
-  account: AgentAccount | AgentAccountCfg | null = null;
+  account: AgentAccount | IAgentAccountCfg | null = null;
   degraded: boolean = false;
 
   LOG_SRC = "Agent";
 
-  constructor(cfg?: AgentCfg) {
+  constructor(cfg?: IAgentCfg) {
     this.log("constructor");
     this.init(cfg);
   }
@@ -38,7 +23,7 @@ export class Agent {
     Logger.log(msg, this.LOG_SRC);
   }
 
-  private init(cfg?: AgentCfg): void {
+  private init(cfg?: IAgentCfg): void {
     this.log("init");
   
     cfg = cfg || {};
@@ -124,10 +109,10 @@ export class Agent {
     return this.objectType + ": unidentified";
   }
 
-  asVersion(version: string = Versions[0]): AgentCfg {
+  asVersion(version: string = Versions[0]): IAgentCfg {
     this.log("asVersion: " + version);
   
-    const result: AgentCfg = {
+    const result: IAgentCfg = {
       objectType: this.objectType
     };
   
@@ -152,7 +137,7 @@ export class Agent {
   static fromJSON(agentJSON: string): Agent {
     Logger.log("fromJSON", "Agent");
     console.log(agentJSON)
-    const _agent: AgentCfg = JSON.parse(agentJSON);
+    const _agent: IAgentCfg = JSON.parse(agentJSON);
     if (Array.isArray(_agent.name) && _agent.name.length > 0) {
       console.log(_agent.name[0])
       _agent.name = _agent.name[0];

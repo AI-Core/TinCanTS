@@ -1,5 +1,12 @@
 import { Agent } from "./Agent";
 
+interface IAgentProfileCfg {
+  id?: string,
+  agent?: Agent,
+  contents?: string,
+  etag?: string,
+  contentType?: string
+}
 export class AgentProfile {
   id: string | null;
   agent: Agent | null;
@@ -10,13 +17,7 @@ export class AgentProfile {
 
   private readonly LOG_SRC = "AgentProfile";
 
-  constructor(cfg: {
-      id?: string,
-      agent?: Agent, // Assuming Agent is another class you've defined
-      contents?: string,
-      etag?: string,
-      contentType?: string
-  }) {
+  constructor(cfg: IAgentProfileCfg) {
       this.log("constructor");
 
       this.id = cfg.id || null;
@@ -33,16 +34,8 @@ export class AgentProfile {
       console.log(`[${this.LOG_SRC}] ${message}`);
   }
 
-  private init(cfg: {
-      id?: string,
-      contents?: string,
-      etag?: string,
-      contentType?: string,
-      agent?: Agent
-  }): void {
+  private init(cfg: IAgentProfileCfg): void {
       this.log("init");
-
-      const directProps = ["id", "contents", "etag", "contentType"];
 
       if (cfg.agent && !(cfg.agent instanceof Agent)) {
           this.agent = new Agent(cfg.agent); // Assuming Agent constructor accepts a config object

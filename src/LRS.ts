@@ -1,15 +1,21 @@
-import { TinCan } from "./TinCan";
 import { Utils } from "./Utils";
 import { Statement } from "./Statement";
 import { About } from "./About";
 import { Attachment, AttachmentCfg } from "./Attachment";
 import { Logger } from "./Logger";
 import { Versions } from "./Versions";
-import { RecordStoreConfig } from "./interfaces";
+import {
+  RecordStoreConfig,
+  DropStateCfg,
+  RetrieveActivityProfileCfg,
+  SaveActivityProfileCfg,
+  DropActivityProfileCfg,
+  RetrieveAgentProfileCfg,
+  SaveAgentProfileCfg,
+  DropAgentProfileConfig
+} from "./interfaces";
 import { StatementsResult } from "./StatementResult";
 import { Agent } from "./Agent";
-import { Group } from "./Group";
-import { Verb } from "./Verb";
 import { Activity } from "./Activity";
 import { State } from "./State";
 import { QueryCfg, QueryParams } from "./interfaces";
@@ -31,14 +37,6 @@ interface SaveStateCfg {
   lastSHA1?: string;
   contentType?: string;
   method?: 'PUT' | 'POST';
-  callback?: (error: Error | null, response?: Response) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface DropStateCfg {
-  activity: Activity;
-  agent: Agent;
-  registration?: string;
   callback?: (error: Error | null, response?: Response) => void;
   requestHeaders?: { [key: string]: string };
 }
@@ -68,59 +66,17 @@ interface RetrieveActivityCfg {
   requestHeaders?: { [key: string]: string };
 }
 
-interface RetrieveActivityProfileCfg {
-  activity: Activity; // Ensure the Activity type is defined in your project
-  callback?: (error: Error | null, result?: ActivityProfile) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
 interface RetrieveActivityProfileIdsCfg {
-  activity: Activity; // Ensure the Activity type is defined in your project
+  activity: Activity;
   callback?: (error: Error | null, result?: string[]) => void;
   since?: string;
   requestHeaders?: { [key: string]: string };
 }
 
-interface SaveActivityProfileCfg {
-  activity: Activity; // Ensure the Activity type is defined in your project
-  lastSHA1?: string;
-  contentType?: string;
-  method?: 'PUT' | 'POST';
-  callback?: (error: Error | null) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface DropActivityProfileCfg {
-  activity: Activity; // Ensure the Activity type is defined in your project
-  callback?: (error: Error | null) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface RetrieveAgentProfileCfg {
-  agent: Agent; // Ensure the Agent type is defined in your project
-  callback?: (error: Error | null, result?: AgentProfile | null) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
 interface RetrieveAgentProfileIdsConfig {
-  agent: Agent; // Assuming Agent is a class or interface you've defined elsewhere
+  agent: Agent;
   callback?: (err: Error | null, result?: string[] | null) => void;
   since?: string;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface SaveAgentProfileConfig {
-  agent: Agent; // Assuming Agent is a class or interface you've defined elsewhere
-  lastSHA1?: string;
-  contentType?: string;
-  method?: 'PUT' | 'POST';
-  callback?: (err: Error | null, response?: Response) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface DropAgentProfileConfig {
-  agent: Agent; // Assuming Agent is a class or interface you've defined elsewhere
-  callback?: (err: Error | null, response?: Response) => void;
   requestHeaders?: { [key: string]: string };
 }
 
@@ -207,9 +163,9 @@ export class LRS {
     }
 
     const headers = cfg.headers || {};
-    headers["Authorization"] = this.auth || ''; // Set authorization header
+    headers["Authorization"] = this.auth || '';
     if (this.version && this.version !== "0.9") {
-        headers["X-Experience-API-Version"] = this.version; // Set version header
+        headers["X-Experience-API-Version"] = this.version;
     }
 
     try {
@@ -1221,7 +1177,7 @@ export class LRS {
       method: "GET",
       params: {
         profileId: key,
-        activityId: cfg.activity.id
+        activityId: cfg.activity?.id
       },
       ignore404: true,
       headers: requestHeaders
@@ -1343,7 +1299,7 @@ export class LRS {
     }
 
     try {
-      const response = await this.sendRequest(requestCfg);
+      await this.sendRequest(requestCfg);
       if (cfg.callback) {
         cfg.callback(null);
       }
@@ -1492,7 +1448,7 @@ export class LRS {
     }
   }
 
-  async saveAgentProfile(key: string, val: any, cfg: SaveAgentProfileConfig): Promise<Response | void> {
+  async saveAgentProfile(key: string, val: any, cfg: SaveAgentProfileCfg): Promise<Response | void> {
     this.log("saveAgentProfile");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1515,7 +1471,7 @@ export class LRS {
         method: cfg.method,
         params: {
             profileId: key,
-            [this.version === "0.9" ? "actor" : "agent"]: JSON.stringify(cfg.agent.asVersion(this.version ?? Versions[0]))
+            [this.version === "0.9" ? "actor" : "agent"]: JSON.stringify(cfg.agent?.asVersion(this.version ?? Versions[0]))
         },
         data: val,
         headers: requestHeaders

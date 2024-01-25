@@ -56,7 +56,7 @@ export class ActivityProfile {
 
 
   static fromJSON(stateJSON: string): ActivityProfile {
-    Logger.log("fromJSON", "ActivityProfile"); // Replacing the prototype log with a direct call to Logger
+    Logger.log("fromJSON", "ActivityProfile");
     const _state: ActivityProfileCfg = JSON.parse(stateJSON);
 
     return new ActivityProfile(_state);

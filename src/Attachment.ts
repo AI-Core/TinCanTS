@@ -1,5 +1,4 @@
 import { Logger } from './Logger';
-import { Versions } from './Versions';
 import { Utils } from './Utils';
 
 export interface AttachmentCfg {

@@ -1,8 +1,9 @@
 import { Logger } from "./Logger";
-import { Agent, AgentCfg } from "./Agent";
+import { Agent } from "./Agent";
+import { IAgentCfg } from "./interfaces/Agent"
 
-export interface GroupCfg extends AgentCfg {
-  member?: AgentCfg[];
+export interface GroupCfg extends IAgentCfg {
+  member?: IAgentCfg[];
 }
 
 export class Group extends Agent {

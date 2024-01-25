@@ -70,7 +70,7 @@ export class ActivityDefinition {
   }
 
   private init(cfg?: ActivityDefinitionCfg): void {
-    this.log(`init: ${JSON.stringify(cfg)}`); // Replacing the prototype log with a direct call to Logger
+    this.log(`init: ${JSON.stringify(cfg)}`);
 
     cfg = cfg || {};
 
@@ -203,7 +203,7 @@ export class ActivityDefinition {
     return result as ActivityDefinitionCfg;
   }
   static fromJSON(definitionJSON: string): ActivityDefinition {
-    Logger.log("fromJSON", "ActivityDefinition"); // Replacing the prototype log with a direct call to Logger
+    Logger.log("fromJSON", "ActivityDefinition");
     const _definition: ActivityDefinitionCfg = JSON.parse(definitionJSON);
 
     return new ActivityDefinition(_definition);

@@ -1,13 +1,13 @@
 import { Logger } from "./Logger";
-import { Versions } from "./Versions"; // Assuming Versions is defined elsewhere
-import { AgentAccountCfg } from "./interfaces";
+import { Versions } from "./Versions";
+import { IAgentAccountCfg } from "./interfaces/Agent";
 
 export class AgentAccount {
   homePage: string | null;
   name: string | null;
   private readonly LOG_SRC = "AgentAccount";
 
-  constructor(cfg?: AgentAccountCfg) {
+  constructor(cfg?: IAgentAccountCfg) {
     this.log("constructor");
     this.homePage = null;
     this.name = null;
@@ -18,7 +18,7 @@ export class AgentAccount {
     Logger.log(message, this.LOG_SRC);
   }
 
-  private init(cfg?: AgentAccountCfg): void {
+  private init(cfg?: IAgentAccountCfg): void {
     this.log("init");
 
     cfg = cfg || {};
@@ -31,7 +31,7 @@ export class AgentAccount {
       cfg.name = cfg.accountName;
     }
 
-    const directProps: Array<keyof AgentAccountCfg> = ["name", "homePage"];
+    const directProps: Array<keyof IAgentAccountCfg> = ["name", "homePage"];
 
     directProps.forEach(prop => {
       if (cfg && cfg[prop] !== undefined) {
@@ -55,9 +55,9 @@ export class AgentAccount {
     return result;
   }
 
-  asVersion(version: string = Versions[0]): AgentAccountCfg {
+  asVersion(version: string = Versions[0]): IAgentAccountCfg {
     this.log("asVersion: " + version);
-    const result: AgentAccountCfg = {};
+    const result: IAgentAccountCfg = {};
 
     if (version === "0.9") {
       result.accountName = this.name;
@@ -71,7 +71,7 @@ export class AgentAccount {
   }
 
   static fromJSON(acctJSON: string): AgentAccount {
-    const _acct: AgentAccountCfg = JSON.parse(acctJSON);
+    const _acct: IAgentAccountCfg = JSON.parse(acctJSON);
     return new AgentAccount(_acct);
   }
 }

@@ -1,5 +1,5 @@
 import { Logger } from "./Logger";
-import { Agent, AgentCfg } from "./Agent";
+import { Agent } from "./Agent";
 import { Group, GroupCfg } from "./Group";
 import { Verb, VerbCfg } from "./Verb";
 import { Activity, ActivityCfg } from "./Activity";
@@ -9,16 +9,17 @@ import { Result, ResultCfg } from "./Result";
 import { Context, ContextCfg } from "./Context";
 import { Attachment, AttachmentCfg } from "./Attachment";
 import { Utils } from "./Utils";
+import { IAgentCfg } from "./interfaces/Agent";
 
 export interface StatementCfg {
   id?: string;
-  actor?: Agent | AgentCfg | Group | GroupCfg;
+  actor?: Agent | IAgentCfg | Group | GroupCfg;
   verb?: Verb | VerbCfg;
-  object?: Activity | Agent | Group | StatementRef | SubStatement | ActivityCfg | AgentCfg | GroupCfg | StatementRef | SubStatement;
-  target?: Activity | Agent | Group | StatementRef | SubStatement | ActivityCfg | AgentCfg | GroupCfg | StatementRef | SubStatement;
+  object?: Activity | Agent | Group | StatementRef | SubStatement | ActivityCfg | IAgentCfg | GroupCfg | StatementRef | SubStatement;
+  target?: Activity | Agent | Group | StatementRef | SubStatement | ActivityCfg | IAgentCfg | GroupCfg | StatementRef | SubStatement;
   result?: Result | ResultCfg;
   context?: Context | ContextCfg;
-  authority?: Agent | Group | AgentCfg | GroupCfg;
+  authority?: Agent | Group | IAgentCfg | GroupCfg;
   attachments?: Attachment[] | AttachmentCfg[];
   timestamp?: string;
   stored?: string;
@@ -96,7 +97,7 @@ export class Statement {
   private setObjectProperties(cfg: StatementCfg) {
     this.log("setObjectProperties" + JSON.stringify(cfg));
     if (cfg?.actor) {
-      this.actor = cfg.actor instanceof Agent ? cfg.actor : new Agent(cfg.actor);
+      this.actor = cfg.actor instanceof Agent ? cfg.actor : new Agent(cfg.actor)
     }
     if (cfg?.target) {
       this.object = cfg.target instanceof Activity ? cfg.target : new Activity(cfg.target);

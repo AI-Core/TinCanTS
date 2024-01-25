@@ -1,5 +1,4 @@
 import { Logger } from './Logger';
-import { Versions } from './Versions';
 
 interface InteractionComponentCfg {
   id?: string;

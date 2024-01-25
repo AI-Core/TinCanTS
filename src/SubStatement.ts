@@ -1,16 +1,17 @@
 import { Logger } from "./Logger";
-import { Agent, AgentCfg } from "./Agent";
+import { Agent } from "./Agent";
 import { Verb, VerbCfg } from "./Verb";
 import { Activity, ActivityCfg } from "./Activity";
 import { Result, ResultCfg } from "./Result";
 import { Context, ContextCfg } from "./Context";
 import { StatementRef, StatementRefCfg } from "./StatementRef";
+import { IAgentCfg } from "./interfaces/Agent";
 
 export interface SubStatementCfg {
   objectType?: string;
-  actor?: Agent | AgentCfg;
+  actor?: Agent | IAgentCfg;
   verb?: Verb | VerbCfg;
-  target?: Activity | Agent | SubStatement | StatementRef | ActivityCfg | AgentCfg | SubStatementCfg | StatementRefCfg;
+  target?: Activity | Agent | SubStatement | StatementRef | ActivityCfg | IAgentCfg | SubStatementCfg | StatementRefCfg;
   result?: Result | ResultCfg;
   context?: Context | ContextCfg;
   timestamp?: string;
@@ -61,7 +62,7 @@ export class SubStatement {
     }
   }
 
-  private initializeTarget(obj: ActivityCfg | AgentCfg | SubStatementCfg | StatementRefCfg ): Activity | Agent | SubStatement | StatementRef | null{
+  private initializeTarget(obj: ActivityCfg | IAgentCfg | SubStatementCfg | StatementRefCfg ): Activity | Agent | SubStatement | StatementRef | null{
     switch (obj.objectType) {
       case "Activity":
         return new Activity(obj);
