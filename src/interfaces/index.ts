@@ -1,10 +1,12 @@
 import { Agent } from "../Agent";
 import { Activity } from "../Activity";
 import { Verb } from "../Verb";
-import { Result } from "../Result";
+import { ActivityProfile } from "../ActivityProfile";
 import { StatementsResult } from "../StatementResult";
+import { AgentProfile } from "../AgentProfile";
+import { State } from "../State";
 
-export interface RecordStoreConfig {
+export interface IRecordStoreCfg {
   endpoint?: string;
   allowFail?: boolean;
   auth?: string;
@@ -41,14 +43,7 @@ export interface ActivityDefinitionCfg extends Partial<DirectProps>, Partial<Int
   type?: string;
 }
 
-export interface AgentAccountCfg {
-  homePage?: string | null;
-  name?: string | null;
-  accountServiceHomePage?: string | null;
-  accountName?: string | null;
-}
-
-export interface QueryParams {
+export interface IGetStatementParams {
   agent?: Agent;
   actor?: Agent;
   object?: Activity | Agent; // Define other possible types for 'object' and 'target' as needed
@@ -71,7 +66,85 @@ export interface QueryParams {
   [key: string]: any;
 }
 
-export interface QueryCfg {
-  params?: QueryParams;
+export interface IGetStatementCfg {
+  params?: IGetStatementParams;
+  sendActor?: boolean;
+  sendActivity?: boolean;
   callback?: (err: Error | null, response?: StatementsResult | null) => void;
+}
+
+export interface IDropStateCfg {
+  activity: Activity;
+  agent: Agent;
+  registration?: string;
+  callback?: (error: Error | null, response?: Response) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface IRetrieveActivityProfileCfg {
+  activity?: Activity; 
+  callback?: (error: Error | null, result?: ActivityProfile) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface ISaveActivityProfileCfg {
+  activity: Activity; 
+  lastSHA1?: string;
+  contentType?: string;
+  overwriteJSON?: boolean;
+  method?: 'PUT' | 'POST';
+  callback?: (error: Error | null) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface IDropActivityProfileCfg {
+  activity: Activity;
+  callback?: (error: Error | null) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface IRetrieveAgentProfileCfg {
+  agent: Agent;
+  callback?: (error: Error | null, result?: AgentProfile | null) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface ISaveAgentProfileCfg {
+  agent?: Agent;
+  lastSHA1?: string;
+  contentType?: string;
+  method?: 'PUT' | 'POST';
+  overwriteJSON: boolean;
+  callback?: (err: Error | null, response?: Response) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface IDropAgentProfileConfig {
+  agent: Agent;
+  callback?: (err: Error | null, response?: Response) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface ISaveStateCfg {
+  activity: Activity;
+  agent: Agent;
+  registration?: string;
+  lastSHA1?: string;
+  contentType?: string;
+  method?: 'PUT' | 'POST';
+  overwriteJSON?: boolean;
+  callback?: (error: Error | null, response?: Response) => void;
+  requestHeaders?: { [key: string]: string };
+}
+
+export interface ISaveStatementCfg {
+  callback?: (err: Error | null, response?: Response | null) => void
+}
+
+export interface IRetrieveStateCfg {
+  activity: Activity;
+  agent: Agent;
+  registration?: string;
+  callback?: (error: Error | null, result?: State) => void;
+  requestHeaders?: { [key: string]: string };
 }

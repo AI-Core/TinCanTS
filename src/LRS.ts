@@ -1,47 +1,32 @@
+import {
+  IRecordStoreCfg,
+  IDropStateCfg,
+  IRetrieveActivityProfileCfg,
+  ISaveActivityProfileCfg,
+  IDropActivityProfileCfg,
+  IRetrieveAgentProfileCfg,
+  ISaveAgentProfileCfg,
+  IDropAgentProfileConfig,
+  IGetStatementCfg,
+  IGetStatementParams,
+  ISaveStateCfg,
+  IRetrieveStateCfg,
+  ISaveStatementCfg
+} from "./interfaces";
 import { Utils } from "./Utils";
 import { Statement } from "./Statement";
 import { About } from "./About";
 import { Attachment, AttachmentCfg } from "./Attachment";
 import { Logger } from "./Logger";
 import { Versions } from "./Versions";
-import {
-  RecordStoreConfig,
-  DropStateCfg,
-  RetrieveActivityProfileCfg,
-  SaveActivityProfileCfg,
-  DropActivityProfileCfg,
-  RetrieveAgentProfileCfg,
-  SaveAgentProfileCfg,
-  DropAgentProfileConfig
-} from "./interfaces";
 import { StatementsResult } from "./StatementResult";
 import { Agent } from "./Agent";
 import { Activity } from "./Activity";
 import { State } from "./State";
-import { QueryCfg, QueryParams } from "./interfaces";
 import { ActivityProfile } from "./ActivityProfile";
 import { AgentProfile } from "./AgentProfile";
 
-interface RetrieveStateCfg {
-  activity: Activity;
-  agent: Agent;
-  registration?: string;
-  callback?: (error: Error | null, result?: State) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface SaveStateCfg {
-  activity: Activity;
-  agent: Agent;
-  registration?: string;
-  lastSHA1?: string;
-  contentType?: string;
-  method?: 'PUT' | 'POST';
-  callback?: (error: Error | null, response?: Response) => void;
-  requestHeaders?: { [key: string]: string };
-}
-
-interface RetrieveStateIdsCfg {
+interface IRetrieveStateIdsCfg {
   activity: Activity;
   agent: Agent;
   registration?: string;
@@ -61,12 +46,12 @@ interface IRequestCfg {
   ignore404?: boolean;
 }
 
-interface RetrieveActivityCfg {
+interface IRetrieveActivityCfg {
   callback?: (error: Error | null, result?: Activity) => void;
   requestHeaders?: { [key: string]: string };
 }
 
-interface RetrieveActivityProfileIdsCfg {
+interface IRetrieveActivityProfileIdsCfg {
   activity: Activity;
   callback?: (error: Error | null, result?: string[]) => void;
   since?: string;
@@ -80,7 +65,7 @@ interface RetrieveAgentProfileIdsConfig {
   requestHeaders?: { [key: string]: string };
 }
 
-interface IGetStatementParams {
+interface IGetStatementResultsParams {
   attachments?: boolean;
 }
 
@@ -102,7 +87,7 @@ export class LRS {
     Logger.log(message, this.LOG_SRC);
   }
 
-  private init(cfg: RecordStoreConfig): void {
+  private init(cfg: IRecordStoreCfg): void {
     this.log("init");
     this.log("init - cfg: " + JSON.stringify(cfg));
 
@@ -297,7 +282,7 @@ export class LRS {
     return new Blob([header, content], { type: contentType });
   }
 
-  private async _processGetStatementResult(response: Response, params: IGetStatementParams): Promise<Statement> {
+  private async _processGetStatementResult(response: Response, params: IGetStatementResultsParams): Promise<Statement> {
     if (!params.attachments) {
         const jsonResponse = await response.json();
         return Statement.fromJSON(jsonResponse);
@@ -339,7 +324,7 @@ export class LRS {
       let body = responseText.substring(bodyStart, bodyEnd);
 
       if (parts.length === 0) {
-          // Additional processing if needed for the first part
+        //ODO: Additional processing if needed for the first part
       }
 
       parts.push({ headers, body });
@@ -348,14 +333,6 @@ export class LRS {
     }
 
     return parts;
-  }
-
-  private __uint8ToString(byteArray: Uint8Array): string {
-    let result = "";
-    for (let i = 0; i < byteArray.byteLength; i++) {
-      result += String.fromCharCode(byteArray[i]);
-    }
-    return result;
   }
 
   private _parseHeaders(rawHeaders: string): { [key: string]: string } {
@@ -409,12 +386,14 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
 
       let result;
-      if (response?.ok) {
-        const jsonResponse = await response.json();
-        this.log("about - response: " + JSON.stringify(jsonResponse));
-        result = About.fromJSON(jsonResponse);
-      } else {
-        throw new Error(`HTTP Error: ${response?.status} ${response?.statusText}`);
+      if (response instanceof Response) {
+        if (response.ok) {
+          const jsonResponse = await response.json();
+          this.log("about - response: " + JSON.stringify(jsonResponse));
+          result = About.fromJSON(jsonResponse);
+        } else {
+          throw new Error(`HTTP Error: ${response?.status} ${response?.statusText}`);
+        }
       }
 
       if (cfg.callback) {
@@ -431,11 +410,9 @@ export class LRS {
     }
   }
   
-  async saveStatement(stmt: Statement, cfg?: {
-    callback?: (err: Error | null, response?: Response) => void
-  }): Promise<Response | void> {
+  async saveStatement(stmt: Statement, cfg?: ISaveStatementCfg): Promise<Response | void> {
     this.log("saveStatement");
-    cfg = cfg || {};
+    cfg = cfg || {} as ISaveStatementCfg;
 
     let versionedStatement;
     try {
@@ -600,7 +577,8 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
       
       let result: Statement | null = null;
-      if (response?.ok) {
+      
+      if (response instanceof Response && response.ok) {
         result = await this._processGetStatementResult(response, params);
       }
 
@@ -653,7 +631,7 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
       
       let result: Statement | null = null;
-      if (response?.ok) {
+      if (response instanceof Response && response.ok) {
         result = await this._processGetStatementResult(response, params);
       }
 
@@ -671,11 +649,11 @@ export class LRS {
     }
   }
 
-  async queryStatements(cfg: QueryCfg): Promise<StatementsResult | void> {
+  async queryStatements(cfg: IGetStatementCfg): Promise<StatementsResult | void> {
     this.log("queryStatements");
 
     cfg = cfg || {};
-    const params = cfg.params || {};
+    const params = cfg.params ?? {};
 
     let requestCfg: IRequestCfg;
     try {
@@ -698,12 +676,12 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
 
       let result: StatementsResult | null = null;
-      if (response?.ok) {
+      if (response instanceof Response && response.ok) {
         if (!params.attachments) {
           const jsonResponse = await response.json();
           result = StatementsResult.fromJSON(jsonResponse);
         } else {
-          const contentType = response.headers.get("Content-Type") || "";
+          const contentType = response.headers.get("Content-Type") ?? "";
           const boundary = contentType.split("boundary=")[1];
 
           const responseText = await response.text();
@@ -735,7 +713,7 @@ export class LRS {
     }
   }
 
-  private _queryStatementsRequestCfg(cfg: { params?: QueryParams }): any {
+  private _queryStatementsRequestCfg(cfg: { params?: IGetStatementParams }): any {
     this.log("_queryStatementsRequestCfg");
 
     const params: any = {};
@@ -878,7 +856,7 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
       let result: StatementsResult | null = null;
   
-      if (response?.ok) {
+      if (response instanceof Response && response.ok) {
         const jsonResponse = await response.json();
         result = StatementsResult.fromJSON(jsonResponse);
       }
@@ -897,9 +875,9 @@ export class LRS {
     }
   }
 
-  async retrieveState(key: string, cfg: RetrieveStateCfg): Promise<State | void> {
+  async retrieveState(key: string, cfg: IRetrieveStateCfg): Promise<State | void> {
     this.log("retrieveState");
-    const requestHeaders = cfg.requestHeaders || {};
+    const requestHeaders = cfg.requestHeaders ?? {};
     const requestParams: any = {
       stateId: key,
       activityId: cfg.activity.id
@@ -931,24 +909,31 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
       let result: State | null = null;
 
-      if (response?.ok) {
-        const content = await response.text();
-        result = new State({
-          id: key,
-          contents: content,
-          etag: response.headers.get("ETag") || "",
-          contentType: response.headers.get("Content-Type") || ""
-        });
+      if (response instanceof Response) {
+        if (response.ok) {
+          const content = await response.text();
+          result = new State({
+            id: key,
+            contents: content,
+            etag: response.headers.get("ETag") ?? "",
+            contentType: response.headers.get("Content-Type") ?? ""
+          });
 
-        if (Utils.isApplicationJSON(result.contentType as string)) {
-          try {
-            result.contents = JSON.parse(result.contents as string);
-          } catch (ex) {
-            this.log("retrieveState - failed to deserialize JSON: " + ex);
+          if (Utils.isApplicationJSON(result.contentType as string)) {
+            try {
+              result.contents = JSON.parse(result.contents as string);
+            } catch (ex) {
+              this.log("retrieveState - failed to deserialize JSON: " + ex);
+            }
           }
+        } else if (response.status === 404) {
+          result = new State({
+            id: key,
+            contents: "",
+            etag: "",
+            contentType: ""
+          });
         }
-      } else if (response?.status === 404) {
-        result = null;
       }
 
       if (cfg.callback) {
@@ -965,9 +950,9 @@ export class LRS {
     }
   }
 
-  async retrieveStateIds(cfg: RetrieveStateIdsCfg): Promise<string[] | void> {
+  async retrieveStateIds(cfg: IRetrieveStateIdsCfg): Promise<string[] | void> {
     this.log("retrieveStateIds");
-    const requestHeaders = cfg.requestHeaders || {};
+    const requestHeaders = cfg.requestHeaders ?? {};
     const requestParams: any = {
       activityId: cfg.activity.id
     };
@@ -1002,10 +987,12 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
       let result: string[] | null = null;
 
-      if (response?.ok) {
-        result = await response.json();
-      } else if (response?.status === 404) {
-        result = [];
+      if (response instanceof Response) {
+        if (response.ok) {
+          result = await response.json();
+        } else if (response?.status === 404) {
+          result = [];
+        }
       }
 
       if (cfg.callback) {
@@ -1021,7 +1008,7 @@ export class LRS {
       }
     }
   }
-  async saveState(key: string, val: any, cfg: SaveStateCfg): Promise<Response | void> {
+  async saveState(key: string, val: any, cfg: ISaveStateCfg): Promise<Response | void> {
     this.log("saveState");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1078,7 +1065,7 @@ export class LRS {
     }
   }
 
-  async dropState(key: string | null, cfg: DropStateCfg): Promise<Response | void> {
+  async dropState(key: string | null, cfg: IDropStateCfg): Promise<Response | void> {
     this.log("dropState");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1125,7 +1112,7 @@ export class LRS {
     }
   }
 
-  async retrieveActivity(activityId: string, cfg: RetrieveActivityCfg): Promise<Activity | void> {
+  async retrieveActivity(activityId: string, cfg: IRetrieveActivityCfg): Promise<Activity | void> {
     this.log("retrieveActivity");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1144,7 +1131,7 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
 
       let result: Activity | null = null;
-      if (response?.ok) {
+      if (response instanceof Response && response.ok) {
         if (response.status === 404) {
           result = new Activity({ id: activityId });
         } else {
@@ -1167,7 +1154,7 @@ export class LRS {
     }
   }
 
-  async retrieveActivityProfile(key: string, cfg: RetrieveActivityProfileCfg): Promise<ActivityProfile | void> {
+  async retrieveActivityProfile(key: string, cfg: IRetrieveActivityProfileCfg): Promise<ActivityProfile | void> {
     this.log("retrieveActivityProfile");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1187,7 +1174,7 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
 
       let result: ActivityProfile | null = null;
-      if (response?.ok) {
+      if (response instanceof Response && response.ok) {
         if (response.status === 404) {
           result = null;
         } else {
@@ -1227,7 +1214,7 @@ export class LRS {
       }
     }
   }
-  async retrieveActivityProfileIds(cfg: RetrieveActivityProfileIdsCfg): Promise<string[] | void> {
+  async retrieveActivityProfileIds(cfg: IRetrieveActivityProfileIdsCfg): Promise<string[] | void> {
     this.log("retrieveActivityProfileIds");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1247,11 +1234,13 @@ export class LRS {
       const response = await this.sendRequest(requestCfg);
 
       let result: string[] | null = null;
-      if (response?.ok) {
-        const jsonResponse = await response.text();
-        result = JSON.parse(jsonResponse);
-      } else if (response?.status === 404) {
-        result = [];
+      if (response instanceof Response) {
+        if (response instanceof Response && response.ok) {
+          const jsonResponse = await response.text();
+          result = JSON.parse(jsonResponse);
+        } else if (response?.status === 404) {
+          result = [];
+        }
       }
 
       if (cfg.callback) {
@@ -1268,7 +1257,7 @@ export class LRS {
     }
   }
 
-  async saveActivityProfile(key: string, val: any, cfg: SaveActivityProfileCfg): Promise<void> {
+  async saveActivityProfile(key: string, val: any, cfg: ISaveActivityProfileCfg): Promise<void> {
     this.log("saveActivityProfile");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1312,7 +1301,7 @@ export class LRS {
     }
   }
 
-  async dropActivityProfile(key: string, cfg: DropActivityProfileCfg): Promise<void> {
+  async dropActivityProfile(key: string, cfg: IDropActivityProfileCfg): Promise<void> {
     this.log("dropActivityProfile");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1328,7 +1317,7 @@ export class LRS {
     };
 
     try {
-      const response = await this.sendRequest(requestCfg);
+      await this.sendRequest(requestCfg);
       if (cfg.callback) {
         cfg.callback(null);
       }
@@ -1341,10 +1330,10 @@ export class LRS {
     }
   }
 
-  async retrieveAgentProfile(key: string, cfg: RetrieveAgentProfileCfg): Promise<AgentProfile | void> {
+  async retrieveAgentProfile(key: string, cfg: IRetrieveAgentProfileCfg): Promise<AgentProfile | void> {
     this.log("retrieveAgentProfile");
 
-    const requestHeaders = cfg.requestHeaders || {};
+    const requestHeaders = cfg.requestHeaders ?? {};
     let url = '';
 
     const params: any = {
@@ -1368,8 +1357,9 @@ export class LRS {
     };
 
     try {
-        const response = await this.sendRequest(requestCfg);
+      const response = await this.sendRequest(requestCfg);
 
+      if (response instanceof Response) {
         if (response?.status === 404) {
             cfg.callback?.(null, null);
             return
@@ -1379,8 +1369,8 @@ export class LRS {
             id: key,
             agent: cfg.agent,
             contents: await response?.text(),
-            etag: response?.headers.get("ETag") || `\"${Utils.getSHA1String(await response?.text() as string)}\"`,
-            contentType: response?.headers.get("Content-Type") || ""
+            etag: response?.headers.get("ETag") ?? `${Utils.getSHA1String(await response?.text() as string)}`,
+            contentType: response?.headers.get("Content-Type") ?? ""
         });
 
         if (Utils.isApplicationJSON(result.contentType as string)) {
@@ -1393,6 +1383,7 @@ export class LRS {
 
         cfg.callback?.(null, result);
         return result;
+      }
     } catch (error) {
         cfg.callback?.(error as Error, null);
     }
@@ -1427,10 +1418,11 @@ export class LRS {
     };
 
     try {
-        const response = await this.sendRequest(requestCfg);
+      const response = await this.sendRequest(requestCfg);
 
-        let result: string[] | null = null;
+      let result: string[] | null = null;
 
+      if (response instanceof Response) {
         if (response?.status === 404) {
             result = [];
         } else {
@@ -1443,12 +1435,13 @@ export class LRS {
 
         cfg.callback?.(null, result);
         return result as string[];
+      }
     } catch (error) {
         cfg.callback?.(error as Error, null);
     }
   }
 
-  async saveAgentProfile(key: string, val: any, cfg: SaveAgentProfileCfg): Promise<Response | void> {
+  async saveAgentProfile(key: string, val: any, cfg: ISaveAgentProfileCfg): Promise<Response | void> {
     this.log("saveAgentProfile");
 
     const requestHeaders = cfg.requestHeaders || {};
@@ -1490,7 +1483,7 @@ export class LRS {
     return this.sendRequest(requestCfg);
   }
 
-  async dropAgentProfile(key: string | null, cfg: DropAgentProfileConfig): Promise<Response | void> {
+  async dropAgentProfile(key: string | null, cfg: IDropAgentProfileConfig): Promise<Response | void> {
     this.log("dropAgentProfile");
 
     const requestHeaders = cfg.requestHeaders || {};

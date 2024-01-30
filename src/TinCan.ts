@@ -1,23 +1,24 @@
 
+import {
+  IRetrieveStateCfg,
+  IRecordStoreCfg,
+  IDropStateCfg,
+  IGetStatementCfg,
+  IRetrieveActivityProfileCfg,
+  ISaveActivityProfileCfg,
+  IDropActivityProfileCfg,
+  IRetrieveAgentProfileCfg,
+  ISaveAgentProfileCfg,
+  IDropAgentProfileConfig,
+  ISaveStateCfg
+} from "./interfaces";
 import { Logger } from "./Logger";
 import { Utils } from "./Utils";
-import {
-  QueryParams,
-  RecordStoreConfig,
-  DropStateCfg,
-  RetrieveActivityProfileCfg,
-  SaveActivityProfileCfg,
-  DropActivityProfileCfg,
-  RetrieveAgentProfileCfg,
-  SaveAgentProfileCfg,
-  DropAgentProfileConfig
-} from "./interfaces";
 import { Agent } from "./Agent";
 import { Activity } from "./Activity";
 import { Context } from "./Context";
 import { LRS } from "./LRS";
 import { Statement } from "./Statement";
-import { QueryCfg } from "./interfaces";
 import { StatementsResult } from "./StatementResult";
 import { State } from "./State";
 import { ActivityProfile } from "./ActivityProfile"
@@ -25,7 +26,7 @@ import { AgentProfile } from "./AgentProfile";
 
 interface TinCanConfig {
   url?: string;
-  recordStores?: RecordStoreConfig[];
+  recordStores?: IRecordStoreCfg[];
   actor?: Agent;
   activity?: Activity;
   registration?: string;
@@ -84,7 +85,7 @@ export class TinCan {
   
   private init(cfg?: TinCanConfig): void {
     this.log("init");
-    cfg = cfg || {};
+    cfg = cfg ?? {};
     
     if (cfg.url) {
       this._initFromQueryString(cfg.url);
@@ -112,7 +113,7 @@ export class TinCan {
     this.log("_initFromQueryString");
 
     const qsParams = Utils.parseURL(url).params;
-    let lrsCfg: RecordStoreConfig = {};
+    let lrsCfg: IRecordStoreCfg = {};
     let contextCfg: { [key: string]: any } = {};
     let extended: { [key: string]: any } | null = null;
 
@@ -158,7 +159,7 @@ export class TinCan {
       }
       for (const key in qsParams) {
         if (qsParams.hasOwnProperty(key) && !_reservedQSParams.hasOwnProperty(key)) {
-          extended = extended || {};
+          extended = extended ?? {};
           extended[key] = qsParams[key];
         }
       }
@@ -173,7 +174,7 @@ export class TinCan {
     }
   }
 
-  addRecordStore(cfg: LRS | RecordStoreConfig): void {
+  addRecordStore(cfg: LRS | IRecordStoreCfg): void {
     this.log("addRecordStore");
     let lrs: LRS;
 
@@ -192,7 +193,7 @@ export class TinCan {
       stmt = new Statement(stmt);
     }
 
-    let statement = stmt as Statement;
+    let statement = stmt;
 
     if (statement.actor === null && this.actor !== null) {
       statement.actor = this.actor;
@@ -247,7 +248,7 @@ export class TinCan {
   
       try {
         const responses = await Promise.all(promises);
-        responses.forEach((response, index) => {
+        responses.forEach((response) => {
           callbackResults.push({ err: null, response });
         });
   
@@ -260,7 +261,7 @@ export class TinCan {
         this.log("[error] sendStatement encountered an error: " + error);
   
         // Populate callbackResults with error details for each failed request
-        callbackResults = this.recordStores.map((_, index) => {
+        callbackResults = this.recordStores.map((_) => {
           return { err: error, response: null };
         });
   
@@ -281,8 +282,8 @@ export class TinCan {
   async getStatement(stmtId: string, callback?: (err: Error | null, result?: Statement) => void, cfg?: { params?: { attachments?: boolean } }): Promise<Statement | void> {
     this.log("getStatement");
   
-    cfg = cfg || {};
-    cfg.params = cfg.params || {};
+    cfg = cfg ?? {};
+    cfg.params = cfg.params ?? {};
   
     if (this.recordStores.length > 0) {
       // For statements (for now) we only need to read from the first LRS
@@ -333,18 +334,18 @@ export class TinCan {
   
   
     voidingStatement = new Statement({
-      actor: actor as Agent,
+      actor: actor,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/voided"
       },
       target: {
         objectType: "StatementRef",
-        id: stmt as string
+        id: stmt
       }
     });
   
     if (this.recordStores.length > 0) {
-      const callbackWrapper = (err: Error | null, response?: Response) => {
+      const callbackWrapper = (err: Error | null, response?: Response | null) => {
         this.log("voidStatement - callbackWrapper");
         callbackResults.push({ err, response });
   
@@ -440,20 +441,16 @@ export class TinCan {
     return { statements, results };
   }
 
-  async getStatements(cfg?: {
-    sendActor?: boolean,
-    sendActivity?: boolean,
-    params?: QueryParams,
-    callback?: (err: Error | null, response?: StatementsResult | null) => void;
-  }): Promise<StatementsResult | void> {
+  async getStatements(cfg?: IGetStatementCfg): Promise<StatementsResult | void> {
     this.log("getStatements");
   
     if (this.recordStores.length > 0) {
       const lrs = this.recordStores[0];
-      cfg = cfg || {};
+      cfg = cfg ?? {};
   
-      let params = cfg.params || {};
+      let params = cfg.params ?? {};
   
+      // Send the instance actor if not defined
       if (cfg.sendActor && this.actor !== null) {
         if (lrs.version === "0.9" || lrs.version === "0.95") {
           params.actor = this.actor;
@@ -461,6 +458,7 @@ export class TinCan {
           params.agent = this.actor;
         }
       }
+      // Send the instance activity if not defined
       if (cfg.sendActivity && this.activity !== null) {
         if (lrs.version === "0.9" || lrs.version === "0.95") {
           params.target = this.activity;
@@ -472,7 +470,7 @@ export class TinCan {
         params.registration = this.registration;
       }
   
-      const queryCfg: QueryCfg = {
+      const queryCfg: IGetStatementCfg = {
         params: params,
       };
 
@@ -498,20 +496,12 @@ export class TinCan {
     }
   }
 
-  async getState(
-    key: string,
-    cfg?: {
-      agent?: Agent,
-      activity?: Activity,
-      registration?: string,
-      callback?: (err: Error | null, state?: State | null) => void
-    }
-  ): Promise<State | void> {
+  async getState(key: string, cfg?: IRetrieveStateCfg): Promise<State | void> {
     this.log("getState");
   
     if (this.recordStores.length > 0) {
       const lrs = this.recordStores[0];
-      cfg = cfg || {};
+      cfg = cfg ?? {} as IRetrieveStateCfg
   
       const queryCfg: {
         agent: Agent,
@@ -528,51 +518,21 @@ export class TinCan {
         queryCfg.registration = this.registration;
       }
   
-      try {
-        const result = await lrs.retrieveState(key, queryCfg);
-        if (cfg.callback) {
-          cfg.callback(null, result as State);
-        }
-        return result;
-      } catch (error) {
-        if (cfg.callback) {
-          cfg.callback(error as Error);
-        } else {
-          throw error;
-        }
-      }
+      const result = await lrs.retrieveState(key, queryCfg);
+      return result;
     } else {
       this.log("[warning] getState: No LRSs added yet (state not retrieved)");
     }
   }
 
-  async setState(
-    key: string,
-    val: string | Object,
-    cfg?: {
-      agent?: Agent,
-      activity?: Activity,
-      registration?: string,
-      lastSHA1?: string,
-      contentType?: string,
-      overwriteJSON?: boolean,
-      callback?: (err: Error | null, response?: Response) => void
-    }
-  ): Promise<void> {
+  async setState(key: string, val: any, cfg?: ISaveStateCfg): Promise<void> {
     this.log("setState");
   
     if (this.recordStores.length > 0) {
       const lrs = this.recordStores[0];
-      cfg = cfg || {};
+      cfg = cfg ?? {} as ISaveStateCfg;
   
-      const queryCfg: {
-        agent: Agent,
-        activity: Activity,
-        registration?: string,
-        lastSHA1?: string,
-        contentType?: string,
-        method?: "PUT" | "POST"
-      } = {
+      const queryCfg: ISaveStateCfg = {
         agent: cfg.agent ?? this.actor as Agent,
         activity: cfg.activity ?? this.activity as Activity
       };
@@ -611,13 +571,13 @@ export class TinCan {
     }
   }
 
-  async deleteState(key: string, cfg?: DropStateCfg): Promise<void> {
+  async deleteState(key: string, cfg?: IDropStateCfg): Promise<void> {
     this.log("deleteState");
   
     if (this.recordStores.length > 0) {
       const lrs = this.recordStores[0];
   
-      const queryCfg: DropStateCfg = {
+      const queryCfg: IDropStateCfg = {
         agent: cfg?.agent ?? this.actor as Agent,
         activity: cfg?.activity ?? this.activity as Activity
       };
@@ -627,25 +587,20 @@ export class TinCan {
       } else if (this.registration !== null) {
         queryCfg.registration = this.registration;
       }
-  
-      try {
-        await lrs.dropState(key, queryCfg);
-      } catch (error) {
-        throw error;
-      }
+      await lrs.dropState(key, queryCfg);
     } else {
       this.log("[warning] deleteState: No LRSs added yet (state not deleted)");
     }
   }
 
-  async getActivityProfile(key: string, cfg: RetrieveActivityProfileCfg): Promise<ActivityProfile | void> {
+  async getActivityProfile(key: string, cfg: IRetrieveActivityProfileCfg): Promise<ActivityProfile | void> {
     this.log("getActivityProfile")
     if (this.recordStores.length > 0) {
       const lrs = this.recordStores[0];
       if (!cfg.activity && !this.activity) {
         throw new Error("There is no activity in your configuration or in the TinCan object")
       }
-      const queryCfg: RetrieveActivityProfileCfg = {
+      const queryCfg: IRetrieveActivityProfileCfg = {
         ...cfg,
         activity: cfg.activity ?? this.activity as Activity,
       }
@@ -656,7 +611,7 @@ export class TinCan {
     }
   }
 
-  async setActivityProfile(key: string, val: any, cfg: SaveActivityProfileCfg): Promise<void> {
+  async setActivityProfile(key: string, val: any, cfg: ISaveActivityProfileCfg): Promise<void> {
     this.log("setActivityProfile")
     if (this.recordStores.length > 0){
       let method: "PUT" | "POST" = cfg.method ?? "PUT";
@@ -667,7 +622,7 @@ export class TinCan {
       ) {
         method = "POST"
       }
-      const queryCfg: SaveActivityProfileCfg = {
+      const queryCfg: ISaveActivityProfileCfg = {
         ...cfg,
         method,
         activity: cfg.activity ?? this.activity
@@ -679,10 +634,10 @@ export class TinCan {
     }
   }
 
-  async deleteActivityProfile(key: string, cfg: DropActivityProfileCfg): Promise<void> {
+  async deleteActivityProfile(key: string, cfg: IDropActivityProfileCfg): Promise<void> {
     this.log("deleteActivityProfile")
     if (this.recordStores.length > 0){
-      const queryCfg: SaveActivityProfileCfg = {
+      const queryCfg: ISaveActivityProfileCfg = {
         ...cfg,
         activity: cfg.activity ?? this.activity
       };
@@ -693,10 +648,10 @@ export class TinCan {
     }
   }
 
-  async getAgentProfile(key:string, cfg: RetrieveAgentProfileCfg): Promise<void | AgentProfile> {
+  async getAgentProfile(key:string, cfg: IRetrieveAgentProfileCfg): Promise<void | AgentProfile> {
     this.log("getAgentProfile")
     if (this.recordStores.length > 0){
-      const queryCfg: RetrieveAgentProfileCfg = {
+      const queryCfg: IRetrieveAgentProfileCfg = {
         ...cfg,
         agent: cfg.agent ?? this.actor
       };
@@ -707,7 +662,7 @@ export class TinCan {
     }
   }
 
-  async setAgentProfile(key:string, val: any, cfg: SaveAgentProfileCfg): Promise<void | Response> {
+  async setAgentProfile(key:string, val: any, cfg: ISaveAgentProfileCfg): Promise<void | Response> {
     this.log("setAgentProfile")
     if (this.recordStores.length > 0){
       let method: "PUT" | "POST" = cfg.method ?? "PUT";
@@ -718,7 +673,7 @@ export class TinCan {
       ) {
         method = "POST"
       }
-      const queryCfg: SaveAgentProfileCfg = {
+      const queryCfg: ISaveAgentProfileCfg = {
         ...cfg,
         method,
         agent: cfg.agent ?? this.actor as Agent
@@ -730,10 +685,10 @@ export class TinCan {
     }
   }
 
-  async deleteAgentProfile(key: string, cfg: DropAgentProfileConfig) {
+  async deleteAgentProfile(key: string, cfg: IDropAgentProfileConfig) {
     this.log("deleteAgentProfile")
     if (this.recordStores.length > 0){
-      const queryCfg: DropAgentProfileConfig = {
+      const queryCfg: IDropAgentProfileConfig = {
         ...cfg,
         agent: cfg.agent ?? this.actor
       };

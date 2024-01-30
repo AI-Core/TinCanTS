@@ -1,15 +1,28 @@
 {
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
+    "tsup": "^8.0.1",
     "typescript": "^5.3.3"
   },
-  "name": "TinCanTs",
-  "version": "1.0.0",
+  "name": "tincants",
+  "version": "1.0.1",
   "description": "A typed version of TinCanJs",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "author": "IvanYingX",
   "license": "MIT",
   "dependencies": {
     "crypto-js": "^4.2.0"
+  },
+  "scripts": {
+    "compile": "tsc src/*ts --outDir dist --target es2020 --module commonjs --moduleResolution node",
+    "clean": "rm -rf dist/* && rm -rf src/*.js",
+    "build": "yarn run clean && yarn run compile",
+    "prepublish": "yarn run build",
+    "build-npm-pkg": "tsup"
   }
 }

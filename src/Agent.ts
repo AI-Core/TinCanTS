@@ -148,5 +148,3 @@ export class Agent {
     return new Agent(_agent);
   }
 }
-
-export default Agent;
