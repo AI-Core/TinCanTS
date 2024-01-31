@@ -11,6 +11,7 @@ export { ContextActivities } from "./ContextActivities";
 export { Group } from "./Group";
 export { InteractionComponent } from "./InteractionComponent";
 export { Logger } from "./Logger";
+export { LMS } from "./LMS";
 export { LRS } from "./LRS";
 export { Result } from "./Result";
 export { Score } from "./Score";
