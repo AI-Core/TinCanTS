@@ -101,7 +101,6 @@ export class LRS {
 
     this.endpoint = String(cfg.endpoint);
     if (this.endpoint.slice(-1) !== "/") {
-      console.log("adding trailing slash to endpoint");
       this.endpoint += "/";
     }
 
@@ -201,7 +200,6 @@ export class LRS {
     }
 
     this.log("makeRequest - cfg" + JSON.stringify(cfg.data));
-    console.log("fullUrl: " + fullUrl);
 
     try {
         const response = await fetch(fullUrl, {
@@ -209,7 +207,6 @@ export class LRS {
             headers: headers,
             body: cfg.data instanceof ArrayBuffer ? null : cfg.data
         });
-        console.log("makeRequest - response: " + JSON.stringify(response));
         // await response.json());
 
         if (cfg.expectMultipart) {
@@ -658,8 +655,6 @@ export class LRS {
     let requestCfg: IRequestCfg;
     try {
       requestCfg = this._queryStatementsRequestCfg(cfg);
-
-      console.log("queryStatements - requestCfg: " + JSON.stringify(requestCfg));
 
       if (params.attachments) {
         requestCfg.expectMultipart = true;

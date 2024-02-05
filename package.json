@@ -5,7 +5,7 @@
     "typescript": "^5.3.3"
   },
   "name": "tincants",
-  "version": "1.0.2",
+  "version": "1.0.10",
   "description": "A typed version of TinCanJs",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -22,7 +22,6 @@
     "compile": "tsc src/*ts --outDir dist --target es2020 --module commonjs --moduleResolution node",
     "clean": "rm -rf dist/* && rm -rf src/*.js",
     "build": "yarn run clean && yarn run compile",
-    "build-npm-pkg": "tsup",
-    "publish": "yarn run build-npm-pkg && npm publish"
+    "build-npm-pkg": "tsup"
   }
 }

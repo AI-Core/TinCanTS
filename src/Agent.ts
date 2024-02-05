@@ -136,10 +136,8 @@ export class Agent {
 
   static fromJSON(agentJSON: string): Agent {
     Logger.log("fromJSON", "Agent");
-    console.log(agentJSON)
     const _agent: IAgentCfg = JSON.parse(agentJSON);
     if (Array.isArray(_agent.name) && _agent.name.length > 0) {
-      console.log(_agent.name[0])
       _agent.name = _agent.name[0];
     }
     if (Array.isArray(_agent.mbox) && _agent.mbox.length > 0) {

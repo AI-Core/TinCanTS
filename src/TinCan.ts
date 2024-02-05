@@ -525,7 +525,7 @@ export class TinCan {
     }
   }
 
-  async setState(key: string, val: any, cfg?: ISaveStateCfg): Promise<void> {
+  async setState(key: string, val: any, cfg?: ISaveStateCfg): Promise<void | Response> {
     this.log("setState");
   
     if (this.recordStores.length > 0) {
@@ -559,6 +559,7 @@ export class TinCan {
         if (cfg.callback) {
           cfg.callback(null, response as Response);
         }
+        return response;
       } catch (error) {
         if (cfg.callback) {
           cfg.callback(error as Error);
