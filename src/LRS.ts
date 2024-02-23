@@ -157,6 +157,7 @@ export class LRS {
             ...cfg,
             headers: headers
         });
+        this.log("sendRequest - response: " + response);
 
         if (cfg.callback) {
             cfg.callback(null, response as Response);
@@ -199,7 +200,7 @@ export class LRS {
       headers.set("Authorization", this.auth);
     }
 
-    this.log("makeRequest - cfg" + JSON.stringify(cfg.data));
+    this.log("makeRequest - cfg " + JSON.stringify(cfg.data));
 
     try {
         const response = await fetch(fullUrl, {
@@ -214,7 +215,7 @@ export class LRS {
             return response;
         }
 
-        if (!response.ok) {
+        if (!response.ok && !cfg.ignore404) {
             throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
         }
 
