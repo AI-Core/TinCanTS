@@ -42,6 +42,11 @@ export class LMS {
     this.tincan = new TinCan({ url: window.location.href });
   }
 
+  async sendStatement(statement: Statement): Promise<void> {
+    this.log("sendStatement");
+    await this.tincan.sendStatement(statement);
+  }
+
   /**
    * Checks the completion status of an activity.
    * @param activityId - The ID of the activity to check.
@@ -67,15 +72,16 @@ export class LMS {
    **/
   protected async setActivityCompleted(
     activity?: ActivityCfg,
+    completionVerb: string = "completed",
   ): Promise<void> {
-    this.log("setActivityCompletion");
+    this.log("setActivityCompleted");
     // Send a statement to the LMS
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
-        id: "http://adlnet.gov/expapi/verbs/completed",
+        id: `http://adlnet.gov/expapi/verbs/${completionVerb}`,
         display: {
-          "en-US": "completed",
+          "en-US": completionVerb,
         },
       },
       object: activity ? new Activity(activity) : this.tincan.activity as Activity,
@@ -92,7 +98,7 @@ export class LMS {
   ): Promise<void> {
     this.log("setLaunched");
     // Send a statement to the LMS
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/launched",
@@ -114,7 +120,7 @@ export class LMS {
   ): Promise<void> {
     this.log("setExperienced");
     // Send a statement to the LMS
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/experienced",
@@ -138,7 +144,7 @@ export class LMS {
     score?: number,
   ): Promise<void> {
     this.log("setPassed");
-    const results = await this.tincan.sendStatement(new Statement({
+    const results = await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/passed",
@@ -168,7 +174,7 @@ export class LMS {
     score?: number,
   ): Promise<void> {
     this.log("setFailed");
-    const results = await this.tincan.sendStatement(new Statement({
+    const results = await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/failed",
@@ -202,10 +208,10 @@ export class LMS {
   protected async setStateCompleted(
     activityId: string,
     activityType: "lesson" | "project" | "milestone" | "task" | "practical-step" | "practical" | "video" | "notebook",
-    completionVerb = "completed",
+    completionVerb: string = "completed",
   ): Promise<void> {
     this.log("setStateCompletion");
-    this.log(`setStateCompleted: ${activityId} ${completionVerb} ${activityType} `);
+    this.log(`setStateCompleted: ${activityId} ${activityType} `);
     const response = await this.tincan.setState(activityId, completionVerb);
     this.log(`setStateCompleted: ${JSON.stringify(response)}`);
     // When getting the state, there are some cases to consider:
@@ -220,16 +226,13 @@ export class LMS {
   // LESSONS
   /**
    * Checks the completion status of a lesson.
-   * @param completionVerb The verb indicating the completion status (default: "completed").
    * @returns A promise that resolves to a boolean indicating whether the lesson is completed.
    * Notes: The lesson id is the activity id. The method is the same as checkProjectCompletion, but it's here for easier access.
    */
-  async checkLessonCompletion(
-    completionVerb: string = "completed",
-  ): Promise<boolean> {
+  async checkLessonCompletion(): Promise<boolean> {
     this.log("Check Lesson Completion");
     const lessonId = this.tincan.activity?.id as string;
-    return await this.checkCompletion(lessonId, completionVerb);
+    return await this.checkCompletion(lessonId);
   }
 
   /**
@@ -254,12 +257,9 @@ export class LMS {
    * Sets the lesson as completed in the LMS. A lesson is completed when all the mandatory elements in it are completed.
    * Usually, they are Notebook, Practical, and Assessment. It depends on the end user when to call this method.
    * 
-   * @param completionVerb The verb indicating the completion status (default: "completed").
    * @returns A Promise that resolves when the lesson is set as completed.
    */
-  async setLessonCompleted(
-    completionVerb: string = "completed",
-  ): Promise<void> {
+  async setLessonCompleted(): Promise<void> {
     this.log("set Lesson Completed");
     const lessonId = this.tincan.activity?.id as string
     const lessonCfg: ActivityCfg = {
@@ -271,22 +271,19 @@ export class LMS {
       },
     };
     await this.setActivityCompleted(lessonCfg);
-    await this.setStateCompleted(lessonId, "lesson", completionVerb);
+    await this.setStateCompleted(lessonId, "lesson");
   }
 
 
   // PROJECTS
   /**
    * Checks the completion status of a project.
-   * @param completionVerb The verb indicating completion status (default: "completed").
    * @returns A promise that resolves to a boolean indicating whether the project is completed.
    */
-  async checkProjectCompletion(
-    completionVerb: string = "completed",
-  ): Promise<boolean> {
+  async checkProjectCompletion(): Promise<boolean> {
     this.log("Check Project Completion");
     const projectId = this.tincan.activity?.id as string
-    return await this.checkCompletion(projectId, completionVerb);
+    return await this.checkCompletion(projectId);
   }
 
   /**
@@ -310,12 +307,9 @@ export class LMS {
   /**
    * Sets the project as completed in the LMS.
    * 
-   * @param completionVerb The verb to indicate completion (default: "completed").
    * @returns A Promise that resolves when the project is set as completed.
    */
-  async setProjectCompleted(
-    completionVerb: string = "completed",
-  ): Promise<void> {
+  async setProjectCompleted(): Promise<void> {
     this.log("setCompletion");
     // Send a statement to the LMS
     const projectCfg: ActivityCfg = {
@@ -328,36 +322,32 @@ export class LMS {
     };
     await this.setActivityCompleted(projectCfg);
     const projectId = this.tincan.activity?.id as string;
-    await this.setStateCompleted(projectId, "project", completionVerb);
+    await this.setStateCompleted(projectId, "project");
   }
 
   /**
    * Checks the completion status of a milestone.
    * @param milestoneId - The ID of the milestone to check.
-   * @param completionVerb - The completion verb to use (default: "completed").
    * @returns A Promise that resolves to a boolean indicating whether the milestone is completed.
    */
   async checkMilestoneCompletion(
-    milestoneId: string,
-    completionVerb: string = "completed",
+    milestoneId: string
   ): Promise<boolean> {
     this.log("Check Milestone Completion");
     const projectId = this.tincan.activity?.id as string
     const query = `${projectId}/${milestoneId}`;
-    return await this.checkCompletion(query, completionVerb);
+    return await this.checkCompletion(query);
   }
 
   /**
    * Sets a milestone as completed.
    * 
    * @param milestoneId - The ID of the milestone.
-   * @param completionVerb - The completion verb to use (default: "completed").
    * @param milestoneName - The name of the milestone (optional).
    * @returns A Promise that resolves when the milestone is set as completed.
    */
   async setMilestoneCompleted(
     milestoneId: string,
-    completionVerb: string = "completed",
     milestoneName?: string,
   ): Promise<void> {
     this.log("setCompletion");
@@ -371,8 +361,8 @@ export class LMS {
         },
       },
     };
-    await this.setActivityCompleted(milestoneCfg);
-    await this.setStateCompleted(projectMilestoneId, "milestone", completionVerb);
+    await this.setActivityCompleted(milestoneCfg, "experienced");
+    await this.setStateCompleted(projectMilestoneId, "milestone");
   }
 
   /**
@@ -380,18 +370,16 @@ export class LMS {
    * 
    * @param milestoneId - The ID of the milestone.
    * @param taskId - The ID of the task.
-   * @param completionVerb - The completion verb to check for (default: "completed").
    * @returns A Promise that resolves to a boolean indicating whether the task is completed.
    */
   async checkTaskCompletion(
     milestoneId: string,
     taskId: string,
-    completionVerb: string = "completed",
   ): Promise<boolean> {
     this.log("Check Task Completion");
     const projectId = this.tincan.activity?.id as string; // For projects, the activity id is the project id
     const query = `${projectId}/${milestoneId}/${taskId}`;
-    return await this.checkCompletion(query, completionVerb);
+    return await this.checkCompletion(query);
   }
 
   /**
@@ -399,14 +387,12 @@ export class LMS {
    * 
    * @param milestoneId - The ID of the milestone the task belongs to.
    * @param taskId - The ID of the task.
-   * @param completionVerb - The verb indicating the completion status (default: "completed").
    * @param taskName - The name of the task (optional).
    * @returns A Promise that resolves to void or a Response object.
    */
   async setTaskCompleted(
     milestoneId: string,
     taskId: string,
-    completionVerb: string = "completed",
     taskName?: string,
   ): Promise<void | Response> {
     this.log("Set Task Completion");
@@ -421,7 +407,7 @@ export class LMS {
       }
     };
     await this.setActivityCompleted(taskCfg);
-    const stateResponse = await this.setStateCompleted(projectTaskId, "task", completionVerb);
+    const stateResponse = await this.setStateCompleted(projectTaskId, "task");
     return stateResponse;
   }
 
@@ -430,16 +416,14 @@ export class LMS {
    * Checks the completion status of a practical activity.
    * 
    * @param practicalId - The ID of the practical activity.
-   * @param completionVerb - The completion verb to check against (default: "completed").
    * @returns A Promise that resolves to a boolean indicating whether the practical activity is completed.
    */
   async checkPracticalCompletion(
     practicalId: string,
-    completionVerb: string = "completed",
   ): Promise<boolean> {
     this.log("Check Practical Completion");
     const activityId = `${this.tincan.activity?.id}/practical/${practicalId}`;
-    return await this.checkCompletion(activityId, completionVerb);
+    return await this.checkCompletion(activityId);
   }
 
   /**
@@ -467,25 +451,23 @@ export class LMS {
    * Sets the practical completion status for a specific practical.
    * 
    * @param practicalId - The ID of the practical.
-   * @param completionVerb - The completion verb to be used (default: "completed").
    * @returns A Promise that resolves to void or a Response object.
    */
   async setPracticalCompleted(
     practicalId: string,
-    completionVerb: string = "completed",
   ): Promise<void | Response> {
     this.log("Set Practical Completion");
     const activityId = `${this.tincan.activity?.id}/practical/${practicalId}`;
-    // const activityCfg = {
-    //   id: activityId,
-    //   definition: {
-    //     name: {
-    //       "en-US": activityId,
-    //     },
-    //   },
-    // };
-    // await this.setActivityCompleted(activityCfg);
-    const stateResponse = await this.setStateCompleted(activityId, "practical", completionVerb);
+    const activityCfg = {
+      id: activityId,
+      definition: {
+        name: {
+          "en-US": activityId,
+        },
+      },
+    };
+    await this.setActivityCompleted(activityCfg, "experienced");
+    const stateResponse = await this.setStateCompleted(activityId, "practical");
     return stateResponse;
   }
 
@@ -520,16 +502,16 @@ export class LMS {
     this.log("setCompletion");
     // Send a statement to the LMS
     const activityId = `${this.tincan.activity?.id}/practical/${practicalId}/step/${stepNumber}`;
-    // const activityCfg = {
-    //   id: activityId,
-    //   definition: {
-    //     name: {
-    //       "en-US": activityId,
-    //     },
-    //   },
-    // };
-    // await this.setActivityCompleted(activityCfg);
-    const stateResponse = await this.setStateCompleted(activityId, "practical-step", "completed");
+    const activityCfg = {
+      id: activityId,
+      definition: {
+        name: {
+          "en-US": activityId,
+        },
+      },
+    };
+    await this.setActivityCompleted(activityCfg, "experienced");
+    const stateResponse = await this.setStateCompleted(activityId, "practical-step");
     return stateResponse;
   }
 
@@ -540,7 +522,7 @@ export class LMS {
    * @returns A Promise that resolves to a string representing the assessment state, or null if the state is not available.
    */
   async getAssessmentState(): Promise<string | null> {
-    this.log("Check Assessment Completion");
+    this.log("Getting Assessment Completion");
     const activityId = this.tincan.activity?.id as string;
     const assessmentId = activityId + "/assessment";
     const getState = await this.tincan.getState(assessmentId);
@@ -557,7 +539,7 @@ export class LMS {
    * Example: [{"question1": "question body", "answers": [{"answer1": "answer body", "correct": true, "selected": true}, ...]}, ...]
    */
   async getAssessmentResponses(): Promise<string | null> {
-    this.log("Check Assessment Responses");
+    this.log("Getting Assessment Responses");
     const activityId = this.tincan.activity?.id as string;
     const assessmentId = activityId + "/assessment/response";
     const getState = await this.tincan.getState(assessmentId);
@@ -627,7 +609,7 @@ export class LMS {
     };
     const attemptsResponse = await this.tincan.getState(assessmentId + "/attempts");
     const attempts = attemptsResponse?.contents ? parseInt(attemptsResponse.contents) : 0;
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/passed",
@@ -675,7 +657,7 @@ export class LMS {
     };
     const attemptsResponse = await this.tincan.getState(assessmentId + "/attempts");
     const attempts = attemptsResponse?.contents ? parseInt(attemptsResponse.contents) : 0;
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/failed",
@@ -707,7 +689,9 @@ export class LMS {
    * Sets the assessment as completed in the LMS.
    * Assessments are not "Completed" in the LMS, but "Passed" or "Failed".
    * So, we check the score and set the assessment as "Passed" if the score is greater than or equal to 0.8, or "Failed" otherwise.
-   * @param completionVerb The verb indicating the completion status (default: "completed").
+   * @param responses - The responses to the assessment.
+   * @param passScore - The passing score for the assessment.
+   * @param score - The score of the assessment.
    */
 
   async setAssessmentCompleted(
@@ -734,13 +718,12 @@ export class LMS {
   /**
    * Checks the completion status of the notebook activity.
    * 
-   * @param completionVerb The verb indicating the completion status (default: "completed").
    * @returns A Promise that resolves to a boolean indicating whether the notebook is completed.
    */
-  async checkNotebookCompletion(completionVerb: string = "completed"): Promise<boolean> {
+  async checkNotebookCompletion(): Promise<boolean> {
     this.log("Check Notebook Completion");
     const activityId = `${this.tincan.activity?.id}/notebook`;
-    return await this.checkCompletion(activityId, completionVerb);
+    return await this.checkCompletion(activityId);
   }
 
   /**
@@ -764,34 +747,32 @@ export class LMS {
   /**
    * Sets the notebook as completed.
    * 
-   * @param completionVerb The verb to indicate completion (default: "completed").
    * @returns A Promise that resolves to void or a Response object.
    */
-  async setNotebookCompleted(completionVerb: string = "completed"): Promise<void | Response> {
+  async setNotebookCompleted(): Promise<void | Response> {
     this.log("setNotebookCompleted");
     const activityId = `${this.tincan.activity?.id}/notebook`
-    // const activityCfg = {
-    //   id: activityId,
-    //   definition: {
-    //     name: {
-    //       "en-US": activityId,
-    //     },
-    //   },
-    // };
-    // await this.setActivityCompleted(activityCfg);
-    return await this.setStateCompleted(activityId, "notebook", completionVerb);
+    const activityCfg = {
+      id: activityId,
+      definition: {
+        name: {
+          "en-US": activityId,
+        },
+      },
+    };
+    await this.setActivityCompleted(activityCfg, "experienced");
+    return await this.setStateCompleted(activityId, "notebook");
   }
 
   // VIDEOS
   /**
    * Checks the completion status of a video activity.
-   * @param completionVerb The completion verb to check against (default: "completed").
    * @returns A Promise that resolves to a boolean indicating the completion status.
    */
-  async checkVideoCompletion(completionVerb: string = "completed"): Promise<boolean> {
+  async checkVideoCompletion(): Promise<boolean> {
     this.log("Check Video Completion");
     const activityId = `${this.tincan.activity?.id}/video`;
-    return await this.checkCompletion(activityId, completionVerb);
+    return await this.checkCompletion(activityId, "Watched");
   }
 
   /**
@@ -818,7 +799,7 @@ export class LMS {
    * If the progress is not available, the method will return 0.
    */
   async getVideoProgress(): Promise<number> {
-    this.log("Check Video Progress");
+    this.log("Getting Video Progress");
     const activityId = `${this.tincan.activity?.id}/video-progress`;
     const getState = await this.tincan.getState(activityId);
     if (getState?.contents) {
@@ -840,7 +821,7 @@ export class LMS {
   async setVideoProgress(
     progress: number,
   ): Promise<void | Response> {
-    this.log("setVideoProgress");
+    this.log("Setting Video Progress");
     const activityId = `${this.tincan.activity?.id}/video-progress`;
     const progressResponse =  await this.tincan.setState(activityId, progress.toString());
     await this.tincan.setState("random", ""); // Set another random state to ensure the last set state is not the progress
@@ -850,24 +831,21 @@ export class LMS {
   /**
    * Sets the video completion status.
    * 
-   * @param completionVerb The completion verb to be used (default: "completed").
    * @returns A Promise that resolves to void or a Response object.
    */
-  async setVideoCompleted(
-    completionVerb: string = "completed",
-  ): Promise<void | Response> {
-    this.log("setVideoCompleted");
+  async setVideoCompleted(): Promise<void | Response> {
+    this.log("Setting Video Completion");
     const activityId = `${this.tincan.activity?.id}/video`;
-    // const activityCfg = {
-    //   id: activityId,
-    //   definition: {
-    //     name: {
-    //       "en-US": activityId,
-    //     },
-    //   },
-    // };
-    // await this.setActivityCompleted(activityCfg);
-    return await this.setStateCompleted(activityId, "video", completionVerb);
+    const activityCfg = {
+      id: activityId,
+      definition: {
+        name: {
+          "en-US": activityId,
+        },
+      },
+    };
+    await this.setActivityCompleted(activityCfg, 'Watched');
+    return await this.setStateCompleted(activityId, "video", "Watched");
   }
 
   /**
@@ -884,7 +862,7 @@ export class LMS {
   ): Promise<void> {
     this.log("setCellRun");
     // Send a statement to the LMS
-    await this.tincan.sendStatement(new Statement({
+    await this.sendStatement(new Statement({
       actor: this.tincan.actor as Agent,
       verb: {
         id: "http://adlnet.gov/expapi/verbs/experienced",
