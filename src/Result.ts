@@ -17,16 +17,13 @@ export class Result {
   duration: string | null = null;
   response: string | null = null;
   extensions: { [key: string]: any } | null = null;
-
-  private readonly LOG_SRC = "Result";
-
   constructor(cfg?: ResultCfg) {
     this.log("constructor");
     this.init(cfg);
   }
 
   private log(msg: string): void {
-    Logger.log(msg, this.LOG_SRC);
+    Logger.log(msg, "Result");
   }
 
   private init(cfg?: ResultCfg): void {
